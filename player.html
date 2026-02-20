@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="renderer" content="webkit">
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>CKPlayer 在线播放</title>
+  <link rel="stylesheet" href="https://cdn.timens.cn/cdn/APlayer/css/APlayer.min.css">
+  <link href="https://cdn.timens.cn/cdn/APlayer/css/ckplayer.css" rel="stylesheet">
+  <script src="https://s4.zstatic.net/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+  <style type="text/css">
+    /* 基础样式 */
+    body{margin:0;}
+    
+    /* 错误提示样式 - 居中显示，醒目且美观 */
+    #error-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      font-size: 16px;
+      color: #e53e3e;
+      padding: 20px;
+      box-sizing: border-box;
+      display: none; /* 默认隐藏 */
+    }
+    #error-container .error-icon {
+      font-size: 48px;
+      margin-bottom: 20px;
+    }
+    #error-container .error-text {
+      max-width: 80%;
+      text-align: center;
+      line-height: 1.6;
+    }
+    
+    /* 播放器容器 - 错误时隐藏 */
+    #preview {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <!-- 错误提示容器 -->
+  <div id="error-container">
+    <div class="error-icon">⚠️</div>
+    <div class="error-text" id="error-message"></div>
+  </div>
+
+  <!-- 播放器容器 -->
+  <div id="preview" align="center">
+    <div class="videoplayer" style="width:100%"></div>
+  </div>
+
+  <script type="text/javascript" src="https://cdn.timens.cn/cdn/APlayer/js/ckplayer.min.js"></script>
+  <script type="text/javascript">
+    // 1. 获取URL参数的工具函数
+    function getQueryParam(name) {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get(name);
+    }
+
+    // 2. URL有效性验证函数（替代PHP的filter_var）
+    function isValidUrl(string) {
+      try {
+        // 验证URL格式，且必须是http/https协议（防止本地文件/非法协议）
+        const url = new URL(string);
+        return ['http:', 'https:'].includes(url.protocol);
+      } catch (_) {
+        return false;
+      }
+    }
+
+    // 3. 显示页面内错误提示
+    function showPageError(msg) {
+      // 隐藏播放器，显示错误
+      document.getElementById('preview').style.display = 'none';
+      const errorContainer = document.getElementById('error-container');
+      errorContainer.style.display = 'flex';
+      document.getElementById('error-message').textContent = msg;
+    }
+
+    // 4. 初始化逻辑
+    $(document).ready(function() {
+      // 获取视频URL参数
+      const rawVideoUrl = getQueryParam('url');
+
+      // 第一步：校验URL是否存在且有效
+      if (!rawVideoUrl) {
+        showPageError('错误：未传入视频链接，请在URL后添加 ?url=视频播放地址');
+        return;
+      }
+      if (!isValidUrl(rawVideoUrl)) {
+        showPageError('错误：无效的视频链接，请检查链接格式是否正确（需以http/https开头）');
+        return;
+      }
+
+      // 第二步：XSS防护（转义特殊字符，替代PHP的htmlspecialchars）
+      const safeVideoUrl = $('<div>').text(rawVideoUrl).html();
+
+      // 第三步：初始化播放器
+      $(".videoplayer").height($(window).height());
+      var videoObject = {
+        container: '.videoplayer',
+        plug: '',
+        video: safeVideoUrl, // 注入安全处理后的视频地址
+        webFull: true,
+      };
+      var player = new ckplayer(videoObject);
+    });
+  </script>
+</body>
+</html>
